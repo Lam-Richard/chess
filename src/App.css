@@ -1,38 +1,88 @@
 .App {
-  text-align: center;
+
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.BoardGrey {
+  /* display: none; */
+  width: 560px;
+  height: 560px;
+  margin: auto;
+  position: absolute;
+  border: 5px solid black;
+  top: calc(50% - 280px);
+  left: calc(50% - 280px);
+  z-index: 50;
+  background-color: rgba(0,0,0,0.6);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.Board {
+  width: 560px;
+  height: 560px;
+  margin: auto;
+  border: 5px solid black;
+  position: absolute;
+  top: calc(50% - 280px);
+  left: calc(50% - 280px);
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-flow: row wrap;
+}
+
+.Square {
+  width: 70px;
+  height: 70px;
+  display: flex;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  align-items: center;
+  position: relative;
 }
 
-.App-link {
-  color: #61dafb;
+.Black {
+  background-color: #2d8659;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+
+.highlight {
+  z-index: 5;
+  opacity: 0.5;
+  background-color: blue;
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+}
+
+.promoteFloat {
+  position: absolute;
+  display: flex;
+  flex-flow: row wrap;
+  border: 1px solid black;
+  z-index: 50;
+  /* height: 70px; */
+  margin: 0px;
+  left: 0%;
+}
+
+.blackPromote {
+  top: -300%;
+}
+
+.whitePromote {
+  top: 0%;
+}
+
+.promoteFloat > .Square {
+  /* background-color: rgba(0,0,0,0.3); */
+  z-index: 100;
+}
+
+.promoteImage {
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background-color: blue;
+}
+
+
+.promoteImage:hover {
+  cursor: pointer;
+  border-radius: 0%;
 }
