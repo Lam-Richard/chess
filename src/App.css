@@ -36,6 +36,10 @@
   position: relative;
 }
 
+.Square:hover {
+  cursor: pointer;
+}
+
 .Black {
   background-color: #2d8659;
 }
@@ -85,4 +89,16 @@
 .promoteImage:hover {
   cursor: pointer;
   border-radius: 0%;
+}
+
+.Checked {
+  background-color: yellow;
+}
+
+.Checkmate {
+  background-color: red;
+}
+
+.Draw {
+  background-color: blue;
 }
