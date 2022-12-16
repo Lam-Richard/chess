@@ -54,7 +54,16 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
     if (SquareContext.lastMoved == null) {
       if (piece == null) {
         if (SquareContext.selectedPiece != null && SquareContext.highlightState[position[0]][position[1]] == true) {
-          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece));
+          if (SquareContext.isEmptySquare(position, SquareContext.boardState)) {
+            SquareContext.playMoveSound();
+          } else {
+            SquareContext.playCaptureSound();
+          }
+          SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
+          SquareContext.setLastMoved([position[0], position[1]]); 
+
+
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
@@ -78,7 +87,16 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           }
         } else if (SquareContext.highlightState[position[0]][position[1]] == true) {
           // I clicked on a black piece (we know it's not null) and it's selectable
-          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece));
+          if (SquareContext.isEmptySquare(position, SquareContext.boardState)) {
+            SquareContext.playMoveSound();
+          } else {
+            SquareContext.playCaptureSound();
+          }
+          SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
+          SquareContext.setLastMoved([position[0], position[1]]); 
+
+
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
@@ -87,7 +105,16 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
     } else {
       if (piece == null) {
         if (SquareContext.selectedPiece != null && SquareContext.highlightState[position[0]][position[1]] == true) {
-          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece));
+          if (SquareContext.isEmptySquare(position, SquareContext.boardState)) {
+            SquareContext.playMoveSound();
+          } else {
+            SquareContext.playCaptureSound();
+          }
+          SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
+          SquareContext.setLastMoved([position[0], position[1]]); 
+
+
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
@@ -109,7 +136,16 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           }
         } else if (SquareContext.highlightState[position[0]][position[1]] == true) {
           // I clicked on a black piece (we know it's not null) and it's selectable
-          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece));
+          if (SquareContext.isEmptySquare(position, SquareContext.boardState)) {
+            SquareContext.playMoveSound();
+          } else {
+            SquareContext.playCaptureSound();
+          }
+          SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
+          SquareContext.setLastMoved([position[0], position[1]]); 
+
+
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
@@ -724,7 +760,7 @@ function App() {
   }
 
   function moveResultsInCheck(to, board, selectedPiece, lastMovedArg) {
-    let copyBoardState = moveToSquare(to, structuredClone(board), selectedPiece, false);
+    let copyBoardState = moveToSquare(to, structuredClone(board), selectedPiece);
     console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `, 
     isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg));  
     return isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg);
@@ -826,12 +862,7 @@ function App() {
     return noValidMoves(getOppositeColor(board, lastMovedArg), board) && kingInCheckArg;
   }
 
-  // END OF STATELESS FUNCTIONS TENTATIVELY
-
-  // STATEFUL FUNCTIONS
-
-  // Inherently stateful functions (or maybe just need to decouple from shouldUpdateMove?):
-  function moveToSquare(to, board, selectedPiece, shouldUpdateMove) {
+  function moveToSquare(to, board, selectedPiece) {
     // Check if there's en-passent related clean up to do...! 
 
     let tempBoard = structuredClone(board);
@@ -844,9 +875,6 @@ function App() {
     let isDiagonal = Math.abs(fromColumn - to[1]) != 0;
     let toIsEmpty = tempBoard[to[0]][to[1]] == null;
     
-
-    let isEnPassant = isPawn && isDiagonal && toIsEmpty;
-
     // EnPassant!
     if (isPawn && isDiagonal && toIsEmpty) {
       if (selectedPiece.pieceColor == "white") {
@@ -859,13 +887,6 @@ function App() {
     let isKing = selectedPiece.pieceType == "King";
     let isQueenSide = (fromColumn - to[1] == 2);
     let isKingSide = (to[1] - fromColumn == 2);
-    
-
-    if ((!toIsEmpty || isEnPassant) && shouldUpdateMove) {
-      playCaptureSound();
-    } else if (toIsEmpty && shouldUpdateMove && !moveResultsInCheck(to, tempBoard, selectedPiece)) {
-      playMoveSound();
-    }
 
     tempBoard[to[0]][to[1]] = structuredClone(selectedPiece);
 
@@ -889,16 +910,13 @@ function App() {
       }
     }
   
-    tempBoard[fromRow][fromColumn] = null;
-
-    // Still an odd pattern for updating state here...!
-    if (shouldUpdateMove) {
-      setLastMoved([to[0], to[1]]); 
-      setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-    }
-
+    tempBoard[fromRow][fromColumn] = null;   
     return tempBoard;
   }
+
+  // END OF STATELESS FUNCTIONS TENTATIVELY
+
+  // STATEFUL FUNCTIONS
 
   // This is rendering, so it maybe doesn't have to be decoupled from the board and highlightState (which it needs to render)...?
   function generateSquares() {
@@ -975,6 +993,7 @@ function App() {
       highlightState: highlightState,
       setHighlightState: setHighlightState,
       isEnemyPiece: isEnemyPiece,
+      isEmptySquare: isEmptySquare,
       lastMoved: lastMoved,
       setLastMoved: setLastMoved,
       isPiecePromoting: isPiecePromoting,
@@ -985,7 +1004,9 @@ function App() {
       moveToSquare: moveToSquare,
       getOppositeColor: getOppositeColor,
       checkmate: checkmate,
-      playIllegalMoveSound: playIllegalMoveSound
+      playIllegalMoveSound: playIllegalMoveSound,
+      playCaptureSound: playCaptureSound,
+      playMoveSound: playMoveSound
     }}>
       <div className="App">
         {boardState && isPiecePromoting ? <div className="BoardGrey" style={{display: 'block'}}></div> : null}
