@@ -57,6 +57,8 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
+          SquareContext.playIllegalMoveSound();
+
         }
       } else {
         // I clicked on one of my own pieces...!
@@ -64,7 +66,13 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           // console.log(`There is a ${piece.pieceColor} ${piece.pieceType} at (${piece.row}, ${piece.column})`)
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
           if (SquareContext.selectedPiece == null || (SquareContext.selectedPiece != null && piece != SquareContext.selectedPiece)) {
-            SquareContext.setSelectedPiece(piece);
+            
+            if (SquareContext.calculateMoves(piece, SquareContext.boardState, SquareContext.lastMoved).length == 0) {
+              SquareContext.playIllegalMoveSound();
+              SquareContext.setSelectedPiece(null);
+            } else {
+              SquareContext.setSelectedPiece(piece);
+            }
           } else {
             SquareContext.setSelectedPiece(null);
           }
@@ -73,6 +81,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
+          SquareContext.playIllegalMoveSound();
         }
       }      
     } else {
@@ -81,6 +90,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
+          SquareContext.playIllegalMoveSound();
         }
       } else {
         // I clicked on one of my own pieces...!
@@ -88,7 +98,12 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           // console.log(`There is a ${piece.pieceColor} ${piece.pieceType} at (${piece.row}, ${piece.column})`)
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
           if (SquareContext.selectedPiece == null || (SquareContext.selectedPiece != null && piece != SquareContext.selectedPiece)) {
-            SquareContext.setSelectedPiece(piece);
+            if (SquareContext.calculateMoves(piece, SquareContext.boardState, SquareContext.lastMoved).length == 0) {
+              SquareContext.playIllegalMoveSound();
+              SquareContext.setSelectedPiece(null);
+            } else {
+              SquareContext.setSelectedPiece(piece);
+            }
           } else {
             SquareContext.setSelectedPiece(null);
           }
@@ -97,6 +112,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
+          SquareContext.playIllegalMoveSound();
         }
       }      
     }
@@ -178,6 +194,7 @@ function App() {
   const [playCaptureSound] = useSound(sounds['Capture.WAV'], { volume: 0.7 });
   const [playCheckmateSound] = useSound(sounds['Checkmate.WAV'], { volume: 0.7 });
   const [playMoveSound] = useSound(sounds['Move_Piece.WAV'], { volume: 0.9 });
+  const [playIllegalMoveSound] = useSound(sounds['Illegal_Move.WAV'], { volume: 0.9 });
 
 
   // STATELESS FUNCTIONS
@@ -783,7 +800,6 @@ function App() {
       }
     }
 
-
     possibleMoves = possibleMoves.filter(move => !moveResultsInCheck(move, board, piece));
 
     return possibleMoves;
@@ -812,8 +828,7 @@ function App() {
 
   // END OF STATELESS FUNCTIONS TENTATIVELY
 
-
-
+  // STATEFUL FUNCTIONS
 
   // Inherently stateful functions (or maybe just need to decouple from shouldUpdateMove?):
   function moveToSquare(to, board, selectedPiece, shouldUpdateMove) {
@@ -874,23 +889,16 @@ function App() {
       }
     }
   
-
-
-    // Need a more elaborate system for castling, but undo is a later feature...!
-
     tempBoard[fromRow][fromColumn] = null;
 
+    // Still an odd pattern for updating state here...!
     if (shouldUpdateMove) {
       setLastMoved([to[0], to[1]]); 
       setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
     }
 
     return tempBoard;
-
-
-   
   }
-
 
   // This is rendering, so it maybe doesn't have to be decoupled from the board and highlightState (which it needs to render)...?
   function generateSquares() {
@@ -904,17 +912,14 @@ function App() {
     })
   }
 
-  // TODO: This should be logging but it's not
-  useEffect(() => {
-    console.log("BoardState has Updated!");
-  }, [boardState])
-
+  // Check if a piece is promoting
   useEffect(() => {
     if (lastMoved != null) {
       setIsPiecePromoting(isPromoting(boardState));
     }
   }, [lastMoved])
 
+  // Show possible moves to the user based on clicked piece
   useEffect(() => {
     if (selectedPiece != null) {
       let copyHighlightState = JSON.parse(JSON.stringify(highlightState));
@@ -925,6 +930,8 @@ function App() {
     }
   }, [selectedPiece])
 
+
+  // Check for a check only after the user finishes promoting
   useEffect(() => {
     if (lastMoved != null && isPiecePromoting == false) {
       // console.log(`The ${getOppositeColor()} King is in Check!: `, isKingInCheck(getOppositeColor(), boardState));
@@ -932,6 +939,8 @@ function App() {
     }
   }, [lastMoved, isPiecePromoting])
 
+
+  // Check if the game is over
   useEffect(() => {
     if (lastMoved != null) {
       if (kingInCheck) {
@@ -940,6 +949,8 @@ function App() {
     }
   }, [lastMoved, kingInCheck])
 
+
+  // Play only checkmate or check sound
   useEffect(() => {
     if (checkmate) {
       playCheckmateSound();
@@ -948,12 +959,15 @@ function App() {
     }
   }, [checkmate, kingInCheck])
 
+
+  // Rendering
   useEffect(() => {
     setDisplay(generateSquares());
   }, [boardState, highlightState])
 
   return (
     <AppContext.Provider value={{
+      calculateMoves: calculateMoves,
       boardState: boardState, 
       setBoardState: setBoardState,
       selectedPiece: selectedPiece,
@@ -970,7 +984,8 @@ function App() {
       isKingInCheck: isKingInCheck,
       moveToSquare: moveToSquare,
       getOppositeColor: getOppositeColor,
-      checkmate: checkmate
+      checkmate: checkmate,
+      playIllegalMoveSound: playIllegalMoveSound
     }}>
       <div className="App">
         {boardState && isPiecePromoting ? <div className="BoardGrey" style={{display: 'block'}}></div> : null}
