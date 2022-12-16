@@ -54,7 +54,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
     if (SquareContext.lastMoved == null) {
       if (piece == null) {
         if (SquareContext.selectedPiece != null && SquareContext.highlightState[position[0]][position[1]] == true) {
-          SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true);
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
         }
@@ -70,7 +70,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           }
         } else if (SquareContext.highlightState[position[0]][position[1]] == true) {
           // I clicked on a black piece (we know it's not null) and it's selectable
-          SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true);
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
         }
@@ -78,7 +78,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
     } else {
       if (piece == null) {
         if (SquareContext.selectedPiece != null && SquareContext.highlightState[position[0]][position[1]] == true) {
-          SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true);
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
         }
@@ -94,7 +94,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           }
         } else if (SquareContext.highlightState[position[0]][position[1]] == true) {
           // I clicked on a black piece (we know it's not null) and it's selectable
-          SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true);
+          SquareContext.setBoardState(SquareContext.moveToSquare(position, SquareContext.boardState, SquareContext.selectedPiece, true));
         } else {
           // Nothing Happens
         }
@@ -707,8 +707,7 @@ function App() {
   }
 
   function moveResultsInCheck(to, board, selectedPiece, lastMovedArg) {
-    let copyBoardState = structuredClone(board);
-    moveToSquare(to, copyBoardState, selectedPiece, false);
+    let copyBoardState = moveToSquare(to, structuredClone(board), selectedPiece, false);
     console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `, 
     isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg));  
     return isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg);
@@ -820,13 +819,15 @@ function App() {
   function moveToSquare(to, board, selectedPiece, shouldUpdateMove) {
     // Check if there's en-passent related clean up to do...! 
 
+    let tempBoard = structuredClone(board);
+
     let fromRow = selectedPiece.row;
     let fromColumn = selectedPiece.column;
 
 
     let isPawn = selectedPiece.pieceType == "Pawn";
     let isDiagonal = Math.abs(fromColumn - to[1]) != 0;
-    let toIsEmpty = board[to[0]][to[1]] == null;
+    let toIsEmpty = tempBoard[to[0]][to[1]] == null;
     
 
     let isEnPassant = isPawn && isDiagonal && toIsEmpty;
@@ -834,9 +835,9 @@ function App() {
     // EnPassant!
     if (isPawn && isDiagonal && toIsEmpty) {
       if (selectedPiece.pieceColor == "white") {
-        board[to[0] + 1][to[1]] = null;
+        tempBoard[to[0] + 1][to[1]] = null;
       } else {
-        board[to[0] - 1][to[1]] = null;
+        tempBoard[to[0] - 1][to[1]] = null;
       }
     }
 
@@ -847,44 +848,47 @@ function App() {
 
     if ((!toIsEmpty || isEnPassant) && shouldUpdateMove) {
       playCaptureSound();
-    } else if (toIsEmpty && shouldUpdateMove && !moveResultsInCheck(to, board, selectedPiece)) {
+    } else if (toIsEmpty && shouldUpdateMove && !moveResultsInCheck(to, tempBoard, selectedPiece)) {
       playMoveSound();
     }
 
-    board[to[0]][to[1]] = structuredClone(selectedPiece);
+    tempBoard[to[0]][to[1]] = structuredClone(selectedPiece);
 
-    board[to[0]][to[1]].row = to[0];
-    board[to[0]][to[1]].column = to[1];
-    board[to[0]][to[1]].movesTaken += 1;
+    tempBoard[to[0]][to[1]].row = to[0];
+    tempBoard[to[0]][to[1]].column = to[1];
+    tempBoard[to[0]][to[1]].movesTaken += 1;
 
     if (isKing) {
       if (isQueenSide) {
-        board[to[0]][to[1] + 1] = structuredClone(board[to[0]][0]);
-        board[to[0]][to[1] + 1].row = to[0];
-        board[to[0]][to[1] + 1].column = to[1] + 1;
-        board[to[0]][to[1] + 1].movesTaken += 1;
-        board[to[0]][0] = null;
+        tempBoard[to[0]][to[1] + 1] = structuredClone(tempBoard[to[0]][0]);
+        tempBoard[to[0]][to[1] + 1].row = to[0];
+        tempBoard[to[0]][to[1] + 1].column = to[1] + 1;
+        tempBoard[to[0]][to[1] + 1].movesTaken += 1;
+        tempBoard[to[0]][0] = null;
       } else if (isKingSide) {
-        board[to[0]][to[1] - 1] = structuredClone(board[to[0]][7]);
-        board[to[0]][to[1] - 1].row = to[0];
-        board[to[0]][to[1] - 1].column = to[1] - 1;
-        board[to[0]][to[1] - 1].movesTaken += 1;
-        board[to[0]][7] = null;
+        tempBoard[to[0]][to[1] - 1] = structuredClone(tempBoard[to[0]][7]);
+        tempBoard[to[0]][to[1] - 1].row = to[0];
+        tempBoard[to[0]][to[1] - 1].column = to[1] - 1;
+        tempBoard[to[0]][to[1] - 1].movesTaken += 1;
+        tempBoard[to[0]][7] = null;
       }
     }
-
-    
+  
 
 
     // Need a more elaborate system for castling, but undo is a later feature...!
 
-    board[fromRow][fromColumn] = null;
-
+    tempBoard[fromRow][fromColumn] = null;
 
     if (shouldUpdateMove) {
       setLastMoved([to[0], to[1]]); 
       setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
     }
+
+    return tempBoard;
+
+
+   
   }
 
 
