@@ -16,7 +16,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
 
 
   const [isCheckedKing, setIsCheckedKing] = 
-  useState((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor()) && SquareContext.kingInCheck);
+  useState((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor(SquareContext.boardState, SquareContext.lastMoved)) && SquareContext.kingInCheck);
   
   const [myClassName, setMyClassName] = useState("");
 
@@ -38,7 +38,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
   }, [isCheckedKing])
 
   useEffect(() => {
-    setIsCheckedKing((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor()) && SquareContext.kingInCheck);
+    setIsCheckedKing((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor(SquareContext.boardState, SquareContext.lastMoved)) && SquareContext.kingInCheck);
   }, [SquareContext.kingInCheck])
 
   function checkSquare() {
@@ -153,18 +153,6 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
 const AppContext = createContext();
 
 function App() {
-  const [boardState, setBoardState] = useState(null);
-  const [highlightState, setHighlightState] = useState([...Array(8)].map(e => Array(8).fill(false)));
-  const [selectedPiece, setSelectedPiece] = useState(null);
-  const [lastMoved, setLastMoved] = useState(null);
-  const [isPiecePromoting, setIsPiecePromoting] = useState(false);
-  const [kingInCheck, setKingInCheck] = useState(false);
-  const [checkmate, setCheckmate] = useState(false);
-
-  const [playCheckSound] = useSound(sounds['Check.WAV'], { volume: 0.7 });
-  const [playCaptureSound] = useSound(sounds['Capture.WAV'], { volume: 0.7 });
-  const [playCheckmateSound] = useSound(sounds['Checkmate.WAV'], { volume: 0.7 });
-  const [playMoveSound] = useSound(sounds['Move_Piece.WAV'], { volume: 0.9 });
 
   // const [gameState, setGameState] = useState([{
   //   boardState: null,
@@ -176,262 +164,68 @@ function App() {
   //   checkmate: false
   // }]);
 
+  const [boardState, setBoardState] = useState(() => initializePieces());
+  const [highlightState, setHighlightState] = useState([...Array(8)].map(e => Array(8).fill(false)));
+  const [selectedPiece, setSelectedPiece] = useState(null);
+  const [lastMoved, setLastMoved] = useState(null);
+  const [isPiecePromoting, setIsPiecePromoting] = useState(false);
+  const [kingInCheck, setKingInCheck] = useState(false);
+  const [checkmate, setCheckmate] = useState(false);
 
-  
+  const [display, setDisplay] = useState(null);
 
-  function isOnBoard(position) {
-    return (position[0] >= 0 && position[0] <= 7) && (position[1] >= 0 && position[1] <= 7);
-  }
+  const [playCheckSound] = useSound(sounds['Check.WAV'], { volume: 0.7 });
+  const [playCaptureSound] = useSound(sounds['Capture.WAV'], { volume: 0.7 });
+  const [playCheckmateSound] = useSound(sounds['Checkmate.WAV'], { volume: 0.7 });
+  const [playMoveSound] = useSound(sounds['Move_Piece.WAV'], { volume: 0.9 });
 
-  
 
+  // STATELESS FUNCTIONS
 
-  function isEmptySquare(rowColumn, board) {
-    return board[rowColumn[0]][rowColumn[1]] == null;
-  }
+  function initializePieces() {
+    let pieceOrder = ["Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook"];
+    let pieceRows = [0, 7];
+    let pawnRows = [1, 6];
+    let colors = ['black', 'white'];
 
-  function isOwnPiece(rowColumn, board, selfColor) {
-    return !isEmptySquare(rowColumn, board) && !isEnemyPiece(rowColumn, board, selfColor);
-  }
+    let newBoard = [...Array(8)].map(e => Array(8).fill(null));
 
-  function isEnemyPiece(rowColumn, board, selfColor) {
-    return !isEmptySquare(rowColumn, board) && board[rowColumn[0]][rowColumn[1]].pieceColor != selfColor
+    for (let row=0; row < 8; row++) {
+      for (let column=0; column < 8; column++) {
+        let currentPieceColor = colors[+ (row > 5)];
+        if (pieceRows.includes(row)) {
+          newBoard[row][column] = {
+            sprite: `${currentPieceColor}${pieceOrder[column]}.jpg`, 
+            row: row,
+            column: column,
+            pieceColor: currentPieceColor,
+            pieceType: pieceOrder[column],
+            movesTaken: 0
+          }
+        } else if (pawnRows.includes(row)) {
+          newBoard[row][column] = {
+            sprite: `${currentPieceColor}Pawn.jpg`, 
+            row: row,
+            column: column,
+            pieceColor: currentPieceColor,
+            pieceType: 'Pawn',
+            movesTaken: 0
+          }
+        }
+      }
+    }
+    return newBoard;
   }
 
   function arrayContains(bigArray, element) {
     return JSON.stringify(bigArray).indexOf(JSON.stringify(element)) != -1;
   }
 
-  function isKingInCheck(kingColor, board) {
-    if (kingColor == "white") {
-      let King = getWhitePieces(board).filter(piece => piece.pieceType == "King")[0];
-      console.log("King in Question: ", King);
-      return isSquareControlled([King.row, King.column], kingColor, board);
-    } else {
-      let King = getBlackPieces(board).filter(piece => piece.pieceType == "King")[0];
-      console.log("King in Question: ", King);
-      return isSquareControlled([King.row, King.column], kingColor, board);
-    }
-  }
-
-  function moveToSquare(to, board, selectedPiece, shouldUpdateMove) {
-    // Check if there's en-passent related clean up to do...! 
-
-    let fromRow = selectedPiece.row;
-    let fromColumn = selectedPiece.column;
-
-    // In En Passant:
-    // The moving piece is a pawn moving diagonally, but there is no piece on the to
-  
-
-    let isPawn = selectedPiece.pieceType == "Pawn";
-    let isDiagonal = Math.abs(fromColumn - to[1]) != 0;
-    let toIsEmpty = board[to[0]][to[1]] == null;
-    
-
-    let isEnPassant = isPawn && isDiagonal && toIsEmpty;
-
-
-    // EnPassant!
-    if (isPawn && isDiagonal && toIsEmpty) {
-      if (selectedPiece.pieceColor == "white") {
-        board[to[0] + 1][to[1]] = null;
-      } else {
-        board[to[0] - 1][to[1]] = null;
-      }
-    }
-
-    let isKing = selectedPiece.pieceType == "King";
-    let isQueenSide = (fromColumn - to[1] == 2);
-    let isKingSide = (to[1] - fromColumn == 2);
-    
-
-    if ((!toIsEmpty || isEnPassant) && shouldUpdateMove) {
-      playCaptureSound();
-    } else if (toIsEmpty && shouldUpdateMove && !moveResultsInCheck(to, board, selectedPiece)) {
-      playMoveSound();
-    }
-
-    board[to[0]][to[1]] = structuredClone(selectedPiece);
-
-    board[to[0]][to[1]].row = to[0];
-    board[to[0]][to[1]].column = to[1];
-    board[to[0]][to[1]].movesTaken += 1;
-
-    if (isKing) {
-      if (isQueenSide) {
-        board[to[0]][to[1] + 1] = structuredClone(board[to[0]][0]);
-        board[to[0]][to[1] + 1].row = to[0];
-        board[to[0]][to[1] + 1].column = to[1] + 1;
-        board[to[0]][to[1] + 1].movesTaken += 1;
-        board[to[0]][0] = null;
-      } else if (isKingSide) {
-        board[to[0]][to[1] - 1] = structuredClone(board[to[0]][7]);
-        board[to[0]][to[1] - 1].row = to[0];
-        board[to[0]][to[1] - 1].column = to[1] - 1;
-        board[to[0]][to[1] - 1].movesTaken += 1;
-        board[to[0]][7] = null;
-      }
-    }
-
-    
-
-
-    // Need a more elaborate system for castling, but undo is a later feature...!
-
-    board[fromRow][fromColumn] = null;
-
-
-    if (shouldUpdateMove) {
-      setLastMoved([to[0], to[1]]); 
-      nextTurn();
-
-      // setGameState([{
-      //   boardState: boardState,
-      //   highlightState: highlightState,
-      //   selectedPiece: selectedPiece,
-      //   lastMoved: lastMoved,
-      //   isPiecePromoting: isPiecePromoting,
-      //   kingInCheck: kingInCheck,
-      //   checkmate: checkmate
-      // }].concat(gameState))
-    }
-  }
-
-  // useEffect(() => {
-  //   console.log("Game State: ");
-  //   console.log(gameState);
-  // }, [gameState])
-
-  // useEffect(() => {
-  //   window.addEventListener("keydown", (event) => {
-  //     if (event.key == "ArrowLeft" && gameState.length != 1) {
-
-  //     }
-  //   })
-  // }, [])
-
-
-
-
-  function noValidMoves(movingPieceColor, board) {
-    let pieces;
-    if (movingPieceColor == "white") {
-      pieces = getWhitePieces(board);
-    } else {
-      pieces = getBlackPieces(board);
-    }
-
-    for (let piece of pieces) {
-      if (calculateMoves(piece, false).length != 0) {
-        return false;
-      } 
-    }
-
-    return true;
-  }
-
-  function isCheckmate() {
-    return noValidMoves(getOppositeColor(), boardState) && kingInCheck;
-  }
-
-  useEffect(() => {
-    if (lastMoved != null) {
-      if (kingInCheck) {
-        setCheckmate(isCheckmate());
-      }
-    }
-  }, [lastMoved, kingInCheck, boardState])
-
-  useEffect(() => {
-    if (checkmate) {
-      playCheckmateSound();
-    } else if (kingInCheck) {
-      playCheckSound();
-    }
-  }, [checkmate, kingInCheck])
-
-
-
-  function isSquareControlled(position, movingPieceColor, board) {
-    // console.log(`Checking if the ${movingPieceColor} King on ${position} is in check...!`)
-    if (movingPieceColor == "white") {
-      let pieces = getBlackPieces(board);
-      for (let blackPiece of pieces) {
-        switch(blackPiece['pieceType']) {
-          case "King":
-            if (arrayContains(validNonCastleMoves([blackPiece.row, blackPiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Queen":
-            if (arrayContains(validQueenMoves([blackPiece.row, blackPiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Rook":
-            if (arrayContains(validRookMoves([blackPiece.row, blackPiece.column], board), position)) {
-             return true;
-            }
-            break;
-          case "Bishop":
-            if (arrayContains(validBishopMoves([blackPiece.row, blackPiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Knight":
-            if (arrayContains(validKnightMoves([blackPiece.row, blackPiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Pawn":
-            if (arrayContains(validPawnCaptures(blackPiece, board), position)) {
-              return true;
-            }
-            break;
-        }
-      }
-        
-    } else {
-      let pieces = getWhitePieces(board);
-      for (let whitePiece of pieces) {
-        switch(whitePiece['pieceType']) {
-          case "King":
-            if (arrayContains(validKingMoves([whitePiece.row, whitePiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Queen":
-            if (arrayContains(validQueenMoves([whitePiece.row, whitePiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Rook":
-            if (arrayContains(validRookMoves([whitePiece.row, whitePiece.column], board), position)) {
-             return true;
-            }
-            break;
-          case "Bishop":
-            if (arrayContains(validBishopMoves([whitePiece.row, whitePiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Knight":
-            if (arrayContains(validKnightMoves([whitePiece.row, whitePiece.column], board), position)) {
-              return true;
-            }
-            break;
-          case "Pawn":
-            // EnPassant edge case? Unlikely given this function's use case
-            if (arrayContains(validPawnCaptures(whitePiece, board), position)) {
-              return true;
-            }
-            break;
-        }
-      }
-    }
-
-    return false;
+  function arrayEquals(a, b) {
+    return Array.isArray(a) &&
+        Array.isArray(b) &&
+        a.length === b.length &&
+        a.every((val, index) => val === b[index]);
   }
 
   function getBlackPieces(board) {
@@ -450,72 +244,45 @@ function App() {
     return whitePieces;
   }
 
-  function moveResultsInCheck(to, board, selectedPiece) {
-    let copyBoardState = structuredClone(board);
-    moveToSquare(to, copyBoardState, selectedPiece, false);
-    console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `, 
-    isKingInCheck(selectedPiece.pieceColor, copyBoardState));  
-    return isKingInCheck(selectedPiece.pieceColor, copyBoardState);
+  function isPromoting(board) {
+    let whiteIsPromoting = board[0].filter(square => square != null && square.sprite == "whitePawn.jpg").length != 0;
+    let blackIsPromoting = board[7].filter(square => square != null && square.sprite == "blackPawn.jpg").length != 0;
+    return whiteIsPromoting || blackIsPromoting;
   }
 
-  function baseKingMoves(position) {
+  function isOnBoard(position) {
+    return (position[0] >= 0 && position[0] <= 7) && (position[1] >= 0 && position[1] <= 7);
+  }
+
+  function isEmptySquare(position, board) {
+    return board[position[0]][position[1]] == null;
+  }
+
+  function isEnemyPiece(position, board, selfColor) {
+    return !isEmptySquare(position, board) && board[position[0]][position[1]].pieceColor != selfColor
+  }
+
+  function isOwnPiece(position, board, selfColor) {
+    return !isEmptySquare(position, board) && !isEnemyPiece(position, board, selfColor);
+  }
+
+  function knightOctopus(position) {
     let positions = [];
-
-    positions.push([position[0] + 1, position[1]]);
-    positions.push([position[0] + 1, position[1] - 1]);
-    positions.push([position[0] + 1, position[1] + 1]);
-
-    positions.push([position[0] - 1, position[1]]);
-    positions.push([position[0] - 1, position[1] - 1]);
-    positions.push([position[0] - 1, position[1] + 1]);
-
-    positions.push([position[0], position[1] + 1]);
-    positions.push([position[0], position[1] - 1]);
-
+    let rowModifiers = [-2, -1, 1, 2];
+    for (let i=0; i<rowModifiers.length; i++) {
+      if (Math.abs(rowModifiers[i]) == 1) {
+        positions.push([position[0] + rowModifiers[i], position[1] - 2])
+        positions.push([position[0] + rowModifiers[i], position[1] + 2])
+      } else {
+        positions.push([position[0] + rowModifiers[i], position[1] - 1])
+        positions.push([position[0] + rowModifiers[i], position[1] + 1])
+      }
+    }
     return positions;
   }
 
-  function baseCastling(position, board) {
-
-
-    let positions = [];
-    let ourKing = board[position[0]][position[1]];
-
-    if (ourKing.movesTaken > 0 || isKingInCheck(board[position[0]][position[1]].pieceColor, board)) {
-      return positions;
-    }
-
-    let queenRook = board[position[0]][0];
-    let kingRook = board[position[0]][7];
-
-    if (queenRook != null 
-      && queenRook['pieceType'] == "Rook" 
-      && queenRook['movesTaken'] == 0 
-      && [1,2,3].filter(column => isEmptySquare([position[0], column], board)).length == 3
-      && [1,2,3].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board)).length == 0
-      
-      ) {
-        positions.push([position[0], 2]);
-    }
-
-    if (kingRook != null 
-      && kingRook['pieceType'] == "Rook" 
-      && kingRook['movesTaken'] == 0 
-      && [5,6].filter(column => isEmptySquare([position[0], column], board)).length == 2
-      && [5,6].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board)).length == 0
-      ) {
-        positions.push([position[0], 6]);
-    }
-
-    return positions;
-  }
-
-  function validKingMoves(position, board) {
-    return baseKingMoves(position).concat(baseCastling(position, board)).filter(move => isOnBoard(move) && !isOwnPiece(move, board, board[position[0]][position[1]].pieceColor));
-  }
-
-  function validNonCastleMoves(position, board) {
-    return baseKingMoves(position).filter(move => isOnBoard(move) && !isOwnPiece(move, board, board[position[0]][position[1]].pieceColor));
+  function validKnightMoves(position, board) {
+    return knightOctopus(position).filter(p => isOnBoard(p) && !isOwnPiece(p, board, board[position[0]][position[1]].pieceColor));
   }
 
   function validBishopMoves(position, board) {
@@ -624,10 +391,6 @@ function App() {
     
   }
 
-  function validQueenMoves(position, board) {
-    return validRookMoves(position, board).concat(validBishopMoves(position, board));
-  }
-
   function validRookMoves(position, board) {
     let horizontal = -1;
     let vertical = -1;
@@ -716,11 +479,32 @@ function App() {
     return positions;
   }
 
-  function validKnightMoves(position, board) {
-    return knightOctopus(position).filter(p => isOnBoard(p) && !isOwnPiece(p, board, board[position[0]][position[1]].pieceColor));
+  function validQueenMoves(position, board) {
+    return validRookMoves(position, board).concat(validBishopMoves(position, board));
   }
 
-  function validPawnMoves(piece, board) {
+  function baseKingMoves(position) {
+    let positions = [];
+
+    positions.push([position[0] + 1, position[1]]);
+    positions.push([position[0] + 1, position[1] - 1]);
+    positions.push([position[0] + 1, position[1] + 1]);
+
+    positions.push([position[0] - 1, position[1]]);
+    positions.push([position[0] - 1, position[1] - 1]);
+    positions.push([position[0] - 1, position[1] + 1]);
+
+    positions.push([position[0], position[1] + 1]);
+    positions.push([position[0], position[1] - 1]);
+
+    return positions;
+  }
+
+  function validNonCastleMoves(position, board) {
+    return baseKingMoves(position).filter(move => isOnBoard(move) && !isOwnPiece(move, board, board[position[0]][position[1]].pieceColor));
+  }
+
+  function validPawnMoves(piece, board, lastMovedArg) {
     let possibleMoves = [];
     if (piece.pieceColor == "white") {
       // Starting Rank Pawns
@@ -751,10 +535,10 @@ function App() {
         let lePiece = board[leP[0]][leP[1]];
         let rePiece = board[reP[0]][reP[1]];
 
-        if (isOnBoard(leP) && isEnemyPiece(leP, board, piece.pieceColor) && arrayEquals(leP, lastMoved) && lePiece != null && lePiece.movesTaken == 1) {
+        if (isOnBoard(leP) && isEnemyPiece(leP, board, piece.pieceColor) && arrayEquals(leP, lastMovedArg) && lePiece != null && lePiece.movesTaken == 1) {
           possibleMoves.push(lePf);
         }
-        if (isOnBoard(reP) && isEnemyPiece(reP, board, piece.pieceColor) && arrayEquals(reP, lastMoved) && rePiece != null && rePiece.movesTaken == 1) {
+        if (isOnBoard(reP) && isEnemyPiece(reP, board, piece.pieceColor) && arrayEquals(reP, lastMovedArg) && rePiece != null && rePiece.movesTaken == 1) {
           possibleMoves.push(rePf);
         }
       }
@@ -799,10 +583,10 @@ function App() {
         let lePiece = board[leP[0]][leP[1]];
         let rePiece = board[reP[0]][reP[1]];
 
-        if (isOnBoard(leP) && isEnemyPiece(leP, board, piece.pieceColor) && arrayEquals(leP, lastMoved) && lePiece != null && lePiece.movesTaken == 1) {
+        if (isOnBoard(leP) && isEnemyPiece(leP, board, piece.pieceColor) && arrayEquals(leP, lastMovedArg) && lePiece != null && lePiece.movesTaken == 1) {
           possibleMoves.push(lePf);
         }
-        if (isOnBoard(reP) && isEnemyPiece(reP, board, piece.pieceColor) && arrayEquals(reP, lastMoved) && rePiece != null && rePiece.movesTaken == 1) {
+        if (isOnBoard(reP) && isEnemyPiece(reP, board, piece.pieceColor) && arrayEquals(reP, lastMovedArg) && rePiece != null && rePiece.movesTaken == 1) {
           possibleMoves.push(rePf);
         }
       }
@@ -822,125 +606,291 @@ function App() {
     return possibleMoves;
   }
 
-  function validPawnCaptures(piece, board) {
-    return validPawnMoves(piece, board).filter(position => position[0] != piece.row);
+  function validPawnCaptures(piece, board, lastMovedArg) {
+    return validPawnMoves(piece, board, lastMovedArg).filter(position => position[0] != piece.row);
   }
 
-  function knightOctopus(position) {
-    let positions = [];
-    let rowModifiers = [-2, -1, 1, 2];
-    for (let i=0; i<rowModifiers.length; i++) {
-      if (Math.abs(rowModifiers[i]) == 1) {
-        positions.push([position[0] + rowModifiers[i], position[1] - 2])
-        positions.push([position[0] + rowModifiers[i], position[1] + 2])
-      } else {
-        positions.push([position[0] + rowModifiers[i], position[1] - 1])
-        positions.push([position[0] + rowModifiers[i], position[1] + 1])
+  function isSquareControlled(position, movingPieceColor, board, lastMovedArg) {
+    if (movingPieceColor == "white") {
+      let pieces = getBlackPieces(board);
+      for (let blackPiece of pieces) {
+        switch(blackPiece['pieceType']) {
+          case "King":
+            if (arrayContains(validNonCastleMoves([blackPiece.row, blackPiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Queen":
+            if (arrayContains(validQueenMoves([blackPiece.row, blackPiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Rook":
+            if (arrayContains(validRookMoves([blackPiece.row, blackPiece.column], board), position)) {
+             return true;
+            }
+            break;
+          case "Bishop":
+            if (arrayContains(validBishopMoves([blackPiece.row, blackPiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Knight":
+            if (arrayContains(validKnightMoves([blackPiece.row, blackPiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Pawn":
+            if (arrayContains(validPawnCaptures(blackPiece, board), position)) {
+              return true;
+            }
+            break;
+        }
+      }
+        
+    } else {
+      let pieces = getWhitePieces(board);
+      for (let whitePiece of pieces) {
+        switch(whitePiece['pieceType']) {
+          case "King":
+            if (arrayContains(validKingMoves([whitePiece.row, whitePiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Queen":
+            if (arrayContains(validQueenMoves([whitePiece.row, whitePiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Rook":
+            if (arrayContains(validRookMoves([whitePiece.row, whitePiece.column], board), position)) {
+             return true;
+            }
+            break;
+          case "Bishop":
+            if (arrayContains(validBishopMoves([whitePiece.row, whitePiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Knight":
+            if (arrayContains(validKnightMoves([whitePiece.row, whitePiece.column], board), position)) {
+              return true;
+            }
+            break;
+          case "Pawn":
+            // EnPassant edge case? Unlikely given this function's use case
+            if (arrayContains(validPawnCaptures(whitePiece, board, lastMovedArg), position)) {
+              return true;
+            }
+            break;
+        }
       }
     }
+
+    return false;
+  }
+
+  function getOppositeColor(board, lastMovedArg) {
+    return board[lastMovedArg[0]][lastMovedArg[1]].pieceColor == "white" ? "black" : "white";
+  }
+
+  function isKingInCheck(kingColor, board, lastMovedArg) {
+    if (kingColor == "white") {
+      let King = getWhitePieces(board).filter(piece => piece.pieceType == "King")[0];
+      // console.log("King in Question: ", King);
+      return isSquareControlled([King.row, King.column], kingColor, board, lastMovedArg);
+    } else {
+      let King = getBlackPieces(board).filter(piece => piece.pieceType == "King")[0];
+      // console.log("King in Question: ", King);
+      return isSquareControlled([King.row, King.column], kingColor, board, lastMovedArg);
+    }
+  }
+
+  function moveResultsInCheck(to, board, selectedPiece, lastMovedArg) {
+    let copyBoardState = structuredClone(board);
+    moveToSquare(to, copyBoardState, selectedPiece, false);
+    console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `, 
+    isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg));  
+    return isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg);
+  }
+
+  function baseCastling(position, board, lastMovedArg) {
+
+    let positions = [];
+    let ourKing = board[position[0]][position[1]];
+
+    if (ourKing.movesTaken > 0 || isKingInCheck(board[position[0]][position[1]].pieceColor, board, lastMovedArg)) {
+      return positions;
+    }
+
+    let queenRook = board[position[0]][0];
+    let kingRook = board[position[0]][7];
+
+    if (queenRook != null 
+      && queenRook['pieceType'] == "Rook" 
+      && queenRook['movesTaken'] == 0 
+      && [1,2,3].filter(column => isEmptySquare([position[0], column], board)).length == 3
+      && [1,2,3].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
+      
+      ) {
+        positions.push([position[0], 2]);
+    }
+
+    if (kingRook != null 
+      && kingRook['pieceType'] == "Rook" 
+      && kingRook['movesTaken'] == 0 
+      && [5,6].filter(column => isEmptySquare([position[0], column], board)).length == 2
+      && [5,6].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
+      ) {
+        positions.push([position[0], 6]);
+    }
+
     return positions;
   }
 
-  function isPromoting(board) {
-    let whiteIsPromoting = board[0].filter(square => square != null && square.sprite == "whitePawn.jpg").length != 0;
-    let blackIsPromoting = board[7].filter(square => square != null && square.sprite == "blackPawn.jpg").length != 0;
-    return whiteIsPromoting || blackIsPromoting;
+  function validKingMoves(position, board) {
+    return baseKingMoves(position).concat(baseCastling(position, board)).filter(move => isOnBoard(move) && !isOwnPiece(move, board, board[position[0]][position[1]].pieceColor));
   }
 
-  function updateHighlightState(calculatedMoves) {
-    let copyHighlightState = JSON.parse(JSON.stringify(highlightState));
-    for (let move of calculatedMoves) {
-      copyHighlightState[move[0]][move[1]] = true;
-    }
-    setHighlightState(copyHighlightState);
-  }
-
-  // Handle logic after movement (will encompass DWL & check[mate] checks, increment player, reset highlights. )
-  function nextTurn() {
-    setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-
-  }
-
-  function calculateMoves(piece, shouldUpdate=true) {
+  function calculateMoves(piece, board, lastMovedArg) {
     let possibleMoves = [];
     if (piece.pieceType == "Pawn") {
-      possibleMoves = validPawnMoves(piece, boardState);
+      possibleMoves = validPawnMoves(piece, board, lastMovedArg);
     } else {
 
       if (piece.pieceType == "Knight") {
-        console.log("Valid Knight Moves: ", validKnightMoves([piece.row, piece.column], boardState));
-        possibleMoves = validKnightMoves([piece.row, piece.column], boardState);
+        console.log("Valid Knight Moves: ", validKnightMoves([piece.row, piece.column], board));
+        possibleMoves = validKnightMoves([piece.row, piece.column], board);
       }
 
       if (piece.pieceType == "Bishop") {
-        console.log("Valid Bishop Moves: ", validBishopMoves([piece.row, piece.column], boardState));
-        possibleMoves = validBishopMoves([piece.row, piece.column], boardState);
+        console.log("Valid Bishop Moves: ", validBishopMoves([piece.row, piece.column], board));
+        possibleMoves = validBishopMoves([piece.row, piece.column], board);
       }
 
       if (piece.pieceType == "Rook") {
-        console.log("Valid Rook Moves: ", validRookMoves([piece.row, piece.column], boardState))
-        possibleMoves = validRookMoves([piece.row, piece.column], boardState);
+        console.log("Valid Rook Moves: ", validRookMoves([piece.row, piece.column], board))
+        possibleMoves = validRookMoves([piece.row, piece.column], board);
       }
 
       if (piece.pieceType == "Queen") {
-        console.log("Valid Queen Moves: ", validQueenMoves([piece.row, piece.column], boardState))
-        possibleMoves = validQueenMoves([piece.row, piece.column], boardState);
+        console.log("Valid Queen Moves: ", validQueenMoves([piece.row, piece.column], board))
+        possibleMoves = validQueenMoves([piece.row, piece.column], board);
       }
 
       if (piece.pieceType == "King") {
-        console.log("Valid King Moves: ", validKingMoves([piece.row, piece.column], boardState))
-        possibleMoves = validKingMoves([piece.row, piece.column], boardState);
+        console.log("Valid King Moves: ", validKingMoves([piece.row, piece.column], board))
+        possibleMoves = validKingMoves([piece.row, piece.column], board);
       }
     }
 
 
-    possibleMoves = possibleMoves.filter(move => !moveResultsInCheck(move, boardState, piece));
-
-
-    
-    if (shouldUpdate) {
-      updateHighlightState(possibleMoves);
-    }
+    possibleMoves = possibleMoves.filter(move => !moveResultsInCheck(move, board, piece));
 
     return possibleMoves;
   }
 
-  function initializePieces() {
-    let pieceOrder = ["Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook"];
-    let pieceRows = [0, 7];
-    let pawnRows = [1, 6];
-    let colors = ['black', 'white'];
-
-    let newBoard = [...Array(8)].map(e => Array(8).fill(null));
-
-    for (let row=0; row < 8; row++) {
-      for (let column=0; column < 8; column++) {
-        let currentPieceColor = colors[+ (row > 5)];
-        if (pieceRows.includes(row)) {
-          newBoard[row][column] = {
-            sprite: `${currentPieceColor}${pieceOrder[column]}.jpg`, 
-            row: row,
-            column: column,
-            pieceColor: currentPieceColor,
-            pieceType: pieceOrder[column],
-            movesTaken: 0
-          }
-        } else if (pawnRows.includes(row)) {
-          newBoard[row][column] = {
-            sprite: `${currentPieceColor}Pawn.jpg`, 
-            row: row,
-            column: column,
-            pieceColor: currentPieceColor,
-            pieceType: 'Pawn',
-            movesTaken: 0
-          }
-        }
-      }
+  function noValidMoves(movingPieceColor, board, lastMovedArg) {
+    let pieces;
+    if (movingPieceColor == "white") {
+      pieces = getWhitePieces(board);
+    } else {
+      pieces = getBlackPieces(board);
     }
-    setBoardState(newBoard);
+
+    for (let piece of pieces) {
+      if (calculateMoves(piece, board, lastMovedArg).length != 0) {
+        return false;
+      } 
+    }
+
+    return true;
   }
 
+  function isCheckmate(board, lastMovedArg, kingInCheckArg) {
+    return noValidMoves(getOppositeColor(board, lastMovedArg), board) && kingInCheckArg;
+  }
+
+  // END OF STATELESS FUNCTIONS TENTATIVELY
+
+
+
+
+  // Inherently stateful functions (or maybe just need to decouple from shouldUpdateMove?):
+  function moveToSquare(to, board, selectedPiece, shouldUpdateMove) {
+    // Check if there's en-passent related clean up to do...! 
+
+    let fromRow = selectedPiece.row;
+    let fromColumn = selectedPiece.column;
+
+
+    let isPawn = selectedPiece.pieceType == "Pawn";
+    let isDiagonal = Math.abs(fromColumn - to[1]) != 0;
+    let toIsEmpty = board[to[0]][to[1]] == null;
+    
+
+    let isEnPassant = isPawn && isDiagonal && toIsEmpty;
+
+    // EnPassant!
+    if (isPawn && isDiagonal && toIsEmpty) {
+      if (selectedPiece.pieceColor == "white") {
+        board[to[0] + 1][to[1]] = null;
+      } else {
+        board[to[0] - 1][to[1]] = null;
+      }
+    }
+
+    let isKing = selectedPiece.pieceType == "King";
+    let isQueenSide = (fromColumn - to[1] == 2);
+    let isKingSide = (to[1] - fromColumn == 2);
+    
+
+    if ((!toIsEmpty || isEnPassant) && shouldUpdateMove) {
+      playCaptureSound();
+    } else if (toIsEmpty && shouldUpdateMove && !moveResultsInCheck(to, board, selectedPiece)) {
+      playMoveSound();
+    }
+
+    board[to[0]][to[1]] = structuredClone(selectedPiece);
+
+    board[to[0]][to[1]].row = to[0];
+    board[to[0]][to[1]].column = to[1];
+    board[to[0]][to[1]].movesTaken += 1;
+
+    if (isKing) {
+      if (isQueenSide) {
+        board[to[0]][to[1] + 1] = structuredClone(board[to[0]][0]);
+        board[to[0]][to[1] + 1].row = to[0];
+        board[to[0]][to[1] + 1].column = to[1] + 1;
+        board[to[0]][to[1] + 1].movesTaken += 1;
+        board[to[0]][0] = null;
+      } else if (isKingSide) {
+        board[to[0]][to[1] - 1] = structuredClone(board[to[0]][7]);
+        board[to[0]][to[1] - 1].row = to[0];
+        board[to[0]][to[1] - 1].column = to[1] - 1;
+        board[to[0]][to[1] - 1].movesTaken += 1;
+        board[to[0]][7] = null;
+      }
+    }
+
+    
+
+
+    // Need a more elaborate system for castling, but undo is a later feature...!
+
+    board[fromRow][fromColumn] = null;
+
+
+    if (shouldUpdateMove) {
+      setLastMoved([to[0], to[1]]); 
+      setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
+    }
+  }
+
+
+  // This is rendering, so it maybe doesn't have to be decoupled from the board and highlightState (which it needs to render)...?
   function generateSquares() {
+    console.log("Generate Squares was called!");
     const noOfSquares = Array.from(Array(64).keys());
     return noOfSquares.map(c => {
       let row = Math.floor(c / 8);
@@ -950,12 +900,10 @@ function App() {
     })
   }
 
-  function arrayEquals(a, b) {
-    return Array.isArray(a) &&
-        Array.isArray(b) &&
-        a.length === b.length &&
-        a.every((val, index) => val === b[index]);
-  }
+  // TODO: This should be logging but it's not
+  useEffect(() => {
+    console.log("BoardState has Updated!");
+  }, [boardState])
 
   useEffect(() => {
     if (lastMoved != null) {
@@ -965,28 +913,40 @@ function App() {
 
   useEffect(() => {
     if (selectedPiece != null) {
-      calculateMoves(selectedPiece);
+      let copyHighlightState = JSON.parse(JSON.stringify(highlightState));
+      for (let move of calculateMoves(selectedPiece, boardState, lastMoved)) {
+        copyHighlightState[move[0]][move[1]] = true;
+      }
+      setHighlightState(copyHighlightState);
     }
   }, [selectedPiece])
-
-  function getOppositeColor() {
-    return boardState[lastMoved[0]][lastMoved[1]].pieceColor == "white" ? "black" : "white";
-  }
-
-  function getColor() {
-    return boardState[lastMoved[0]][lastMoved[1]].pieceColor;
-  }
 
   useEffect(() => {
     if (lastMoved != null && isPiecePromoting == false) {
       // console.log(`The ${getOppositeColor()} King is in Check!: `, isKingInCheck(getOppositeColor(), boardState));
-      setKingInCheck(isKingInCheck(getOppositeColor(), boardState));
+      setKingInCheck(isKingInCheck(getOppositeColor(boardState, lastMoved), boardState, lastMoved));
     }
-  }, [lastMoved, isPiecePromoting, boardState])
+  }, [lastMoved, isPiecePromoting])
 
   useEffect(() => {
-    initializePieces();
-   }, [])
+    if (lastMoved != null) {
+      if (kingInCheck) {
+        setCheckmate(isCheckmate(boardState, lastMoved, kingInCheck));
+      }
+    }
+  }, [lastMoved, kingInCheck])
+
+  useEffect(() => {
+    if (checkmate) {
+      playCheckmateSound();
+    } else if (kingInCheck) {
+      playCheckSound();
+    }
+  }, [checkmate, kingInCheck])
+
+  useEffect(() => {
+    setDisplay(generateSquares());
+  }, [boardState, highlightState])
 
   return (
     <AppContext.Provider value={{
@@ -996,7 +956,6 @@ function App() {
       setSelectedPiece: setSelectedPiece,
       highlightState: highlightState,
       setHighlightState: setHighlightState,
-      nextTurn: nextTurn,
       isEnemyPiece: isEnemyPiece,
       lastMoved: lastMoved,
       setLastMoved: setLastMoved,
@@ -1006,14 +965,13 @@ function App() {
       setKingInCheck: setKingInCheck,
       isKingInCheck: isKingInCheck,
       moveToSquare: moveToSquare,
-      getColor: getColor,
       getOppositeColor: getOppositeColor,
       checkmate: checkmate
     }}>
       <div className="App">
         {boardState && isPiecePromoting ? <div className="BoardGrey" style={{display: 'block'}}></div> : null}
         <div className="Board">
-          {boardState ? generateSquares() : null}
+          {display}
         </div>
       </div>
     </AppContext.Provider>
