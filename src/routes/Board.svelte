@@ -1,27 +1,18 @@
 <script lang="ts">
+	import { getStartingPieceBySquare } from '$lib/utils';
 	import Square from './Square.svelte';
-
-	interface Square {
-		row: number;
-		col: number;
-		id: string;
-	}
-
 	const BOARD_SIZE = 8;
 
-	let board: Square[][] = Array.from({ length: BOARD_SIZE }, (_, r) =>
-		Array.from({ length: BOARD_SIZE }, (_, c) => ({
-			row: r,
-			col: c,
-			id: `r${r}-c${c}`
-		}))
-	);
+
 </script>
 
 <div class="chessboard">
 	{#each { length: BOARD_SIZE }, row}
 		{#each { length: BOARD_SIZE }, col}
-			<Square {row} {col} piece={null}></Square>
+			<Square 
+				{row} 
+				{col} 
+				piece={getStartingPieceBySquare(row, col)}></Square>
 		{/each}
 	{/each}
 </div>

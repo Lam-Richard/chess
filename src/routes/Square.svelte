@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { getSquareColor } from '$lib/utils';
+	import { getSquareColor } from "$lib/utils";
+	import Piece from "./Piece.svelte";
 
 	let { row, col, piece } = $props();
-	let squareColor = getSquareColor(row, col);
+	const squareColor = getSquareColor(row, col);
 </script>
 
 <div>
@@ -11,7 +12,11 @@
         square-base
         square-{squareColor} 
         r{row}-c{col}"
-	>{piece}</div>
+	>
+		{#if piece}
+			<Piece pieceColor={piece.pieceColor} pieceType={piece.pieceType}></Piece>
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -19,8 +24,7 @@
 		display: flex;
 		aspect-ratio: 1 / 1;
 
-		width: 1ch;
-		padding: 1rem;
+		width: 2rem;
 	}
 
 	.square-dark {
