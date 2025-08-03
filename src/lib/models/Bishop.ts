@@ -1,11 +1,11 @@
 import { PieceType, type PieceColor } from "$lib/enums";
 import type { Move } from "./Move";
-import { Piece } from "./Piece";
+import { Piece, PiecePosition } from "./Piece";
 
 export class Bishop extends Piece {
     public readonly pieceType: PieceType;
-    constructor(pieceColor: PieceColor) {
-        super(pieceColor);
+    constructor(piecePosition: PiecePosition, pieceColor: PieceColor) {
+        super(piecePosition, pieceColor);
         this.pieceType = PieceType.Bishop;
     }
 

@@ -1,5 +1,5 @@
 import { PieceColor, PieceType, SquareColor } from "./enums";
-import type { Piece } from "$lib/models/Piece";
+import { PiecePosition, type Piece } from "$lib/models/Piece";
 import { Bishop } from "./models/Bishop";
 import { King } from "./models/King";
 import { Knight } from "./models/Knight";
@@ -60,20 +60,21 @@ export function getStartingPieceBySquare(
     }
 
     let startingPieceType = getStartingPieceType(row, col)
+    let startingPiecePosition = new PiecePosition(row, col)
 
     switch (startingPieceType) {
         case PieceType.Rook:
-            return new Rook(startingPieceColor);
+            return new Rook(startingPiecePosition, startingPieceColor);
         case PieceType.Knight:
-            return new Knight(startingPieceColor);
+            return new Knight(startingPiecePosition, startingPieceColor);
         case PieceType.Bishop:
-            return new Bishop(startingPieceColor);
+            return new Bishop(startingPiecePosition, startingPieceColor);
         case PieceType.Queen:
-            return new Queen(startingPieceColor);
+            return new Queen(startingPiecePosition, startingPieceColor);
         case PieceType.King:
-            return new King(startingPieceColor);
+            return new King(startingPiecePosition, startingPieceColor);
         case PieceType.Pawn:
-            return new Pawn(startingPieceColor);
+            return new Pawn(startingPiecePosition, startingPieceColor);
         default:
             return undefined;
     }

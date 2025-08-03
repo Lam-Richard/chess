@@ -1,9 +1,10 @@
-export class Move {
-    public readonly row: number;
-    public readonly col: number;
+import type { MoveType } from "$lib/enums";
+import type { PiecePosition } from "./Piece";
 
-    constructor(row: number, col: number) {
-        this.row = row;
-        this.col = col;
-    }
+export abstract class Move {
+    public abstract readonly moveType: MoveType;
+    constructor(
+        public readonly oldPosition: PiecePosition,
+        public readonly newPosition: PiecePosition,
+    ) { }
 }

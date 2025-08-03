@@ -4,6 +4,8 @@
 	const BOARD_SIZE = 8;
 
 
+
+
 </script>
 
 <div class="chessboard">
@@ -22,7 +24,7 @@
 		display: grid;
 		grid-template-columns: repeat(8, 1fr);
 		grid-template-rows: repeat(8, 1fr);
-
+		
 		width: fit-content;
 
 		border: 0.25rem solid black;

@@ -1,16 +1,20 @@
-import { PieceType, type PieceColor } from "$lib/enums";
+import { PieceColor, PieceType } from "$lib/enums";
 import type { Move } from "./Move";
-import { Piece } from "./Piece";
+import { Piece, PiecePosition } from "./Piece";
 
 export class Pawn extends Piece {
     public readonly pieceType: PieceType;
     
-    constructor(pieceColor: PieceColor) {
-        super(pieceColor);
+    constructor(piecePosition: PiecePosition, pieceColor: PieceColor) {
+        super(piecePosition, pieceColor);
         this.pieceType = PieceType.Pawn;
     }
 
     getAvailableMoves(): Move[] {
-        throw new Error("Method not implemented.");
+        if (this.pieceColor === PieceColor.Black) {
+            
+        } else {
+            
+        }
     }
 }
