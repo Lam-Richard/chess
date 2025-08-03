@@ -1,20 +1,14 @@
 <script lang="ts">
-	import { getStartingPieceBySquare } from '$lib/utils';
+	import { BoardModel } from '$lib/models/BoardModel';
 	import Square from './Square.svelte';
-	const BOARD_SIZE = 8;
-
-
-
-
+	
+	let board = new BoardModel();
 </script>
 
 <div class="chessboard">
-	{#each { length: BOARD_SIZE }, row}
-		{#each { length: BOARD_SIZE }, col}
-			<Square 
-				{row} 
-				{col} 
-				piece={getStartingPieceBySquare(row, col)}></Square>
+	{#each board.squares as row }
+		{#each row as square}
+			<Square {square}></Square>
 		{/each}
 	{/each}
 </div>
@@ -24,7 +18,7 @@
 		display: grid;
 		grid-template-columns: repeat(8, 1fr);
 		grid-template-rows: repeat(8, 1fr);
-		
+
 		width: fit-content;
 
 		border: 0.25rem solid black;

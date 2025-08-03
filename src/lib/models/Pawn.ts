@@ -1,20 +1,28 @@
 import { PieceColor, PieceType } from "$lib/enums";
+import type { BoardModel } from "./BoardModel";
 import type { Move } from "./Move";
-import { Piece, PiecePosition } from "./Piece";
+import { PieceModel, PiecePosition } from "./PieceModel";
 
-export class Pawn extends Piece {
-    public readonly pieceType: PieceType;
-    
-    constructor(piecePosition: PiecePosition, pieceColor: PieceColor) {
-        super(piecePosition, pieceColor);
-        this.pieceType = PieceType.Pawn;
+export class Pawn extends PieceModel {
+    public readonly type: PieceType;
+
+    constructor(
+        piecePosition: PiecePosition, 
+        pieceColor: PieceColor, 
+        board: BoardModel
+    ) {
+        super(piecePosition, pieceColor, board);
+        this.type = PieceType.Pawn;
     }
 
     getAvailableMoves(): Move[] {
-        if (this.pieceColor === PieceColor.Black) {
-            
+        let moves: Move[] = [];
+
+        if (this.color === PieceColor.Black) {
+
         } else {
-            
+
         }
+        return moves;
     }
 }

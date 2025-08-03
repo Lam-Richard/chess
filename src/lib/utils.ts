@@ -1,11 +1,12 @@
 import { PieceColor, PieceType, SquareColor } from "./enums";
-import { PiecePosition, type Piece } from "$lib/models/Piece";
+import { PiecePosition, type PieceModel } from "$lib/models/PieceModel";
 import { Bishop } from "./models/Bishop";
 import { King } from "./models/King";
 import { Knight } from "./models/Knight";
 import { Pawn } from "./models/Pawn";
 import { Queen } from "./models/Queen";
 import { Rook } from "./models/Rook";
+import type { BoardModel } from "./models/BoardModel";
 
 export function getSquareColor(row: number, col: number): SquareColor {
     if (row % 2 === col % 2) {
@@ -51,8 +52,9 @@ export function getStartingPieceType(row: number, col: number) : PieceType | und
 
 export function getStartingPieceBySquare(
     row: number,
-    col: number
-) : Piece | undefined {
+    col: number,
+    board: BoardModel,
+) : PieceModel | undefined {
     let startingPieceColor = getStartingPieceColor(row)
 
     if (!startingPieceColor) {
@@ -64,17 +66,17 @@ export function getStartingPieceBySquare(
 
     switch (startingPieceType) {
         case PieceType.Rook:
-            return new Rook(startingPiecePosition, startingPieceColor);
+            return new Rook(startingPiecePosition, startingPieceColor, board);
         case PieceType.Knight:
-            return new Knight(startingPiecePosition, startingPieceColor);
+            return new Knight(startingPiecePosition, startingPieceColor, board);
         case PieceType.Bishop:
-            return new Bishop(startingPiecePosition, startingPieceColor);
+            return new Bishop(startingPiecePosition, startingPieceColor, board);
         case PieceType.Queen:
-            return new Queen(startingPiecePosition, startingPieceColor);
+            return new Queen(startingPiecePosition, startingPieceColor, board);
         case PieceType.King:
-            return new King(startingPiecePosition, startingPieceColor);
+            return new King(startingPiecePosition, startingPieceColor, board);
         case PieceType.Pawn:
-            return new Pawn(startingPiecePosition, startingPieceColor);
+            return new Pawn(startingPiecePosition, startingPieceColor, board);
         default:
             return undefined;
     }
