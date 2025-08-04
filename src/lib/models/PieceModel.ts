@@ -16,6 +16,6 @@ export abstract class PieceModel {
         public readonly board: BoardModel,
     ) {
     }
-
+    
     abstract getAvailableMoves(): Move[]
 }

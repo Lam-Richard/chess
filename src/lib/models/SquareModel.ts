@@ -13,7 +13,6 @@ export class SquareModel {
         public readonly board: BoardModel,
         public readonly piece?: PieceModel,
     ) {
-
         this.id = `r${row}-c${col}`;
         this.color = getSquareColor(row, col);
     }

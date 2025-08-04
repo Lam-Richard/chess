@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Board from "./Board.svelte";
+	import Board from "$lib/components/Board.svelte";
 </script>
 
 <svelte:head>

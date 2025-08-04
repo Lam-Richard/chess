@@ -1,4 +1,5 @@
 import { getStartingPieceBySquare } from "$lib/utils";
+import type { PiecePosition } from "./PieceModel";
 import { SquareModel } from "./SquareModel";
 
 const BOARD_SIZE = 8;
@@ -18,7 +19,9 @@ export class BoardModel {
         );
     }
 
-    getSquare(row: number, col: number): SquareModel {
+    getSquare(position: PiecePosition): SquareModel {
+        let { row, col } = position;
+        
         if (row < 0 || row > 7) {
             throw new RangeError(`Expected row to be between in [0, 7] but was ${row}`);
         }
