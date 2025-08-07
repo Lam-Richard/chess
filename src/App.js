@@ -1,27 +1,27 @@
-import React, { useEffect, useState, useContext, createContext} from 'react';
+import React, { useEffect, useState, useContext, createContext } from 'react';
 import useSound from 'use-sound';
 import "./App.css";
 
 function importAll(r) {
   let images = {};
-   r.keys().forEach((item, index) => { images[item.replace('./', '')] = r(item); });
+  r.keys().forEach((item, index) => { images[item.replace('./', '')] = r(item); });
   return images
 }
 const images = importAll(require.context('./chess-pictures', false, /\.(png|jpe?g|svg)$/));
 const sounds = importAll(require.context('./chess-sounds'), false, ".wav");
 
-const Square = ( { isWhite, isHighlighted, position, piece } ) => { 
+const Square = ({ isWhite, isHighlighted, position, piece }) => {
 
   const SquareContext = useContext(AppContext);
 
 
-  const [isCheckedKing, setIsCheckedKing] = 
-  useState((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor(SquareContext.boardState, SquareContext.lastMoved)) && SquareContext.kingInCheck);
-  
+  const [isCheckedKing, setIsCheckedKing] =
+    useState((piece != null) && (SquareContext.lastMoved != null) && (piece.pieceType == "King") && (piece.pieceColor == SquareContext.getOppositeColor(SquareContext.boardState, SquareContext.lastMoved)) && SquareContext.kingInCheck);
+
   const [myClassName, setMyClassName] = useState("");
 
 
-  function generateClassName () {
+  function generateClassName() {
     if (SquareContext.checkmate) {
       return "Square Checkmate";
     } else if (SquareContext.kingInCheck) {
@@ -61,7 +61,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
             SquareContext.playCaptureSound();
           }
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-          SquareContext.setLastMoved([position[0], position[1]]); 
+          SquareContext.setLastMoved([position[0], position[1]]);
 
 
         } else {
@@ -75,7 +75,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
           // console.log(`There is a ${piece.pieceColor} ${piece.pieceType} at (${piece.row}, ${piece.column})`)
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
           if (SquareContext.selectedPiece == null || (SquareContext.selectedPiece != null && piece != SquareContext.selectedPiece)) {
-            
+
             if (SquareContext.calculateMoves(piece, SquareContext.boardState, SquareContext.lastMoved).length == 0) {
               SquareContext.playIllegalMoveSound();
               SquareContext.setSelectedPiece(null);
@@ -94,14 +94,14 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
             SquareContext.playCaptureSound();
           }
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-          SquareContext.setLastMoved([position[0], position[1]]); 
+          SquareContext.setLastMoved([position[0], position[1]]);
 
 
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
         }
-      }      
+      }
     } else {
       if (piece == null) {
         if (SquareContext.selectedPiece != null && SquareContext.highlightState[position[0]][position[1]] == true) {
@@ -112,7 +112,7 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
             SquareContext.playCaptureSound();
           }
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-          SquareContext.setLastMoved([position[0], position[1]]); 
+          SquareContext.setLastMoved([position[0], position[1]]);
 
 
         } else {
@@ -143,14 +143,14 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
             SquareContext.playCaptureSound();
           }
           SquareContext.setHighlightState([...Array(8)].map(e => Array(8).fill(false)));
-          SquareContext.setLastMoved([position[0], position[1]]); 
+          SquareContext.setLastMoved([position[0], position[1]]);
 
 
         } else {
           // Nothing Happens
           SquareContext.playIllegalMoveSound();
         }
-      }      
+      }
     }
   }
 
@@ -180,25 +180,29 @@ const Square = ( { isWhite, isHighlighted, position, piece } ) => {
 
   // So right now I need to make a thing if the Square's position is 0 or 7.
   return (
-    (position[0] == 0 || position[0] == 7) && piece != null && piece['sprite'] == `${piece['pieceColor']}Pawn.jpg` ? 
-    <div className={myClassName}>
-      {/* {isHighlighted == true ? <div className="highlight"></div> : null}
-      {piece != null ? <img src={images[piece['sprite']]}/> :  null} */}
+    (position[0] == 0 || position[0] == 7) && piece != null && piece['sprite'] == `${piece['pieceColor']}Pawn.jpg` ?
+      <div
+        className={myClassName}
+        data-row={position[0]}
+        data-col={position[1]}
+      >
         <div className={`promoteFloat ${piece['pieceColor']}Promote`}>
-          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(1)} src={images[`${piece['pieceColor']}Queen.jpg`]}/></div>
-          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(2)} src={images[`${piece['pieceColor']}Rook.jpg`]}/></div>
-          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(3)} src={images[`${piece['pieceColor']}Bishop.jpg`]}/></div>
-          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(4)} src={images[`${piece['pieceColor']}Knight.jpg`]}/></div>
+          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(1)} src={images[`${piece['pieceColor']}Queen.jpg`]} /></div>
+          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(2)} src={images[`${piece['pieceColor']}Rook.jpg`]} /></div>
+          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(3)} src={images[`${piece['pieceColor']}Bishop.jpg`]} /></div>
+          <div className="Square"><img className="promoteImage" onClick={() => promotePiece(4)} src={images[`${piece['pieceColor']}Knight.jpg`]} /></div>
         </div>
-    </div>  
-    :
-    
-    // piece != null && piece['sprite'] ==
-    
-    <div className={myClassName} onClick={() => checkSquare()}>
-      {isHighlighted == true ? <div className="highlight"></div> : null}
-      {piece != null ? <img src={images[piece['sprite']]}/> :  null}
-    </div>
+      </div>
+      :
+      <div
+        className={myClassName}
+        onClick={() => checkSquare()}
+        data-row={position[0]}
+        data-col={position[1]}
+      >
+        {isHighlighted == true ? <div className="highlight"></div> : null}
+        {piece != null ? <img src={images[piece['sprite']]} /> : null}
+      </div>
   )
 }
 
@@ -243,12 +247,12 @@ function App() {
 
     let newBoard = [...Array(8)].map(e => Array(8).fill(null));
 
-    for (let row=0; row < 8; row++) {
-      for (let column=0; column < 8; column++) {
+    for (let row = 0; row < 8; row++) {
+      for (let column = 0; column < 8; column++) {
         let currentPieceColor = colors[+ (row > 5)];
         if (pieceRows.includes(row)) {
           newBoard[row][column] = {
-            sprite: `${currentPieceColor}${pieceOrder[column]}.jpg`, 
+            sprite: `${currentPieceColor}${pieceOrder[column]}.jpg`,
             row: row,
             column: column,
             pieceColor: currentPieceColor,
@@ -257,7 +261,7 @@ function App() {
           }
         } else if (pawnRows.includes(row)) {
           newBoard[row][column] = {
-            sprite: `${currentPieceColor}Pawn.jpg`, 
+            sprite: `${currentPieceColor}Pawn.jpg`,
             row: row,
             column: column,
             pieceColor: currentPieceColor,
@@ -276,9 +280,9 @@ function App() {
 
   function arrayEquals(a, b) {
     return Array.isArray(a) &&
-        Array.isArray(b) &&
-        a.length === b.length &&
-        a.every((val, index) => val === b[index]);
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((val, index) => val === b[index]);
   }
 
   function getBlackPieces(board) {
@@ -322,7 +326,7 @@ function App() {
   function knightOctopus(position) {
     let positions = [];
     let rowModifiers = [-2, -1, 1, 2];
-    for (let i=0; i<rowModifiers.length; i++) {
+    for (let i = 0; i < rowModifiers.length; i++) {
       if (Math.abs(rowModifiers[i]) == 1) {
         positions.push([position[0] + rowModifiers[i], position[1] - 2])
         positions.push([position[0] + rowModifiers[i], position[1] + 2])
@@ -441,7 +445,7 @@ function App() {
 
     return positions;
 
-    
+
   }
 
   function validRookMoves(position, board) {
@@ -459,7 +463,7 @@ function App() {
           horizontal = 1;
           break;
         } else {
-          horizontal= 1;
+          horizontal = 1;
           break;
         }
       } else {
@@ -667,7 +671,7 @@ function App() {
     if (movingPieceColor == "white") {
       let pieces = getBlackPieces(board);
       for (let blackPiece of pieces) {
-        switch(blackPiece['pieceType']) {
+        switch (blackPiece['pieceType']) {
           case "King":
             if (arrayContains(validNonCastleMoves([blackPiece.row, blackPiece.column], board), position)) {
               return true;
@@ -680,7 +684,7 @@ function App() {
             break;
           case "Rook":
             if (arrayContains(validRookMoves([blackPiece.row, blackPiece.column], board), position)) {
-             return true;
+              return true;
             }
             break;
           case "Bishop":
@@ -700,11 +704,11 @@ function App() {
             break;
         }
       }
-        
+
     } else {
       let pieces = getWhitePieces(board);
       for (let whitePiece of pieces) {
-        switch(whitePiece['pieceType']) {
+        switch (whitePiece['pieceType']) {
           case "King":
             if (arrayContains(validKingMoves([whitePiece.row, whitePiece.column], board), position)) {
               return true;
@@ -717,7 +721,7 @@ function App() {
             break;
           case "Rook":
             if (arrayContains(validRookMoves([whitePiece.row, whitePiece.column], board), position)) {
-             return true;
+              return true;
             }
             break;
           case "Bishop":
@@ -761,8 +765,8 @@ function App() {
 
   function moveResultsInCheck(to, board, selectedPiece, lastMovedArg) {
     let copyBoardState = moveToSquare(to, structuredClone(board), selectedPiece);
-    console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `, 
-    isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg));  
+    console.log(`Moving the ${selectedPiece.pieceColor} ${selectedPiece.pieceType} to ${to} results in check: `,
+      isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg));
     return isKingInCheck(selectedPiece.pieceColor, copyBoardState, lastMovedArg);
   }
 
@@ -778,23 +782,23 @@ function App() {
     let queenRook = board[position[0]][0];
     let kingRook = board[position[0]][7];
 
-    if (queenRook != null 
-      && queenRook['pieceType'] == "Rook" 
-      && queenRook['movesTaken'] == 0 
-      && [1,2,3].filter(column => isEmptySquare([position[0], column], board)).length == 3
-      && [1,2,3].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
-      
-      ) {
-        positions.push([position[0], 2]);
+    if (queenRook != null
+      && queenRook['pieceType'] == "Rook"
+      && queenRook['movesTaken'] == 0
+      && [1, 2, 3].filter(column => isEmptySquare([position[0], column], board)).length == 3
+      && [1, 2, 3].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
+
+    ) {
+      positions.push([position[0], 2]);
     }
 
-    if (kingRook != null 
-      && kingRook['pieceType'] == "Rook" 
-      && kingRook['movesTaken'] == 0 
-      && [5,6].filter(column => isEmptySquare([position[0], column], board)).length == 2
-      && [5,6].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
-      ) {
-        positions.push([position[0], 6]);
+    if (kingRook != null
+      && kingRook['pieceType'] == "Rook"
+      && kingRook['movesTaken'] == 0
+      && [5, 6].filter(column => isEmptySquare([position[0], column], board)).length == 2
+      && [5, 6].filter(column => isSquareControlled([position[0], column], ourKing.pieceColor, board, lastMovedArg)).length == 0
+    ) {
+      positions.push([position[0], 6]);
     }
 
     return positions;
@@ -852,7 +856,7 @@ function App() {
     for (let piece of pieces) {
       if (calculateMoves(piece, board, lastMovedArg).length != 0) {
         return false;
-      } 
+      }
     }
 
     return true;
@@ -874,7 +878,7 @@ function App() {
     let isPawn = selectedPiece.pieceType == "Pawn";
     let isDiagonal = Math.abs(fromColumn - to[1]) != 0;
     let toIsEmpty = tempBoard[to[0]][to[1]] == null;
-    
+
     // EnPassant!
     if (isPawn && isDiagonal && toIsEmpty) {
       if (selectedPiece.pieceColor == "white") {
@@ -909,8 +913,8 @@ function App() {
         tempBoard[to[0]][7] = null;
       }
     }
-  
-    tempBoard[fromRow][fromColumn] = null;   
+
+    tempBoard[fromRow][fromColumn] = null;
     return tempBoard;
   }
 
@@ -986,7 +990,7 @@ function App() {
   return (
     <AppContext.Provider value={{
       calculateMoves: calculateMoves,
-      boardState: boardState, 
+      boardState: boardState,
       setBoardState: setBoardState,
       selectedPiece: selectedPiece,
       setSelectedPiece: setSelectedPiece,
@@ -1009,13 +1013,13 @@ function App() {
       playMoveSound: playMoveSound
     }}>
       <div className="App">
-        {boardState && isPiecePromoting ? <div className="BoardGrey" style={{display: 'block'}}></div> : null}
+        {boardState && isPiecePromoting ? <div className="BoardGrey" style={{ display: 'block' }}></div> : null}
         <div className="Board">
           {display}
         </div>
       </div>
     </AppContext.Provider>
-    
+
   );
 }
 
