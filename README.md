@@ -1,4 +1,4 @@
-# Play Chess React
+# Chess
 
 **A simple chess game web application built with React and Javascript. [Hosted](https://play-chess-react.netlify.app/) with Netlify.**
 
