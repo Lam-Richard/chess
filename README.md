@@ -2,14 +2,11 @@
 
 **A simple chess game web application built with React and Javascript. [Hosted](https://play-chess-react.netlify.app/) with Netlify.**
 
-
-
-
 <figure>
-  <video src="https://github.com/user-attachments/assets/c900f507-48ff-4256-bbe0-180e304c254c" autoplay loop muted playsinline width="600"></video>
-  <figcaption>
-    <em>A Playwright run-through of a very famous (!) chess game.</em>
-  </figcaption>
+  <img src="https://github.com/user-attachments/assets/372ec84b-cb4c-4e8e-b5e3-4f0db11df2e9" alt="A Playwright run-through of a very famous (!) chess game." width="600">
+  <br>
+  <figcaption><em>A Playwright run-through of a very famous (!) chess game.</em></figcaption>
+  <br>
 </figure>
 
 <br>
